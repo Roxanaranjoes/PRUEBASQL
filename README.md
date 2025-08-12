@@ -39,6 +39,8 @@ PRUEBASQL/
 ├── Scriptdatabase.md
 └── README.md
 ├── sistema_pagos_mysql.png
+├──data.csv
+
 
 ```
 
