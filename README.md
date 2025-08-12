@@ -32,8 +32,8 @@ PRUEBASQL/
 │
 ├── frontend/
 │   ├── index.html
-│   ├── css/
-│   ├── js/
+│   ├── style.css
+│   ├── app.js
 │   └── ...
 │
 ├── Scriptdatabase.md
@@ -124,7 +124,7 @@ node server.js
 
 Por defecto se ejecutará en:
 
-📍 [**http://localhost:3000**](http://localhost:3000/)
+ [**http://localhost:3000**](http://localhost:3000/)
 
 ---
 
