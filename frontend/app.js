@@ -1,118 +1,144 @@
-const contenedor = document.getElementById('clientes');
-const form = document.getElementById('formCliente');
-const inputId = document.getElementById('clienteId');
-const inputNombre = document.getElementById('nombre_cliente');
-const inputIdentificacion = document.getElementById('identificacion');
-const inputDireccion = document.getElementById('direccion');
-const inputTelefono = document.getElementById('telefono');
-const inputCorreo = document.getElementById('correo');
-const btnCancelar = document.getElementById('btnCancelar');
+// ========================
+// Helper para LocalStorage
+// ========================
+function guardarEnLocalStorage(key, data) {
+localStorage.setItem(key, JSON.stringify(data));
+}
 
-// Función para cargar clientes
-function cargarClientes() {
-fetch('/clientes')
-.then(res => res.json())
-.then(data => {
-if (!Array.isArray(data)) {
-console.error('❌ Respuesta inesperada:', data);
-contenedor.innerHTML = '<p style="color:red;">❌ Error al cargar clientes.</p>';
+function leerDeLocalStorage(key) {
+const data = localStorage.getItem(key);
+return data ? JSON.parse(data) : [];
+}
+
+// ========================
+// Mostrar tablas
+// ========================
+function mostrarTabla(idTabla, datos) {
+const tabla = document.getElementById(idTabla);
+if (!datos.length) {
+tabla.innerHTML = "<tr><td colspan='10'>No hay datos</td></tr>";
 return;
 }
 
-contenedor.innerHTML = '';
-data.forEach(cliente => {
-const div = document.createElement('div');
-div.className = 'cliente';
-div.innerHTML = `
-<h3>${cliente.nombre_cliente}</h3>
-<p><b>ID:</b> ${cliente.id_cliente}</p>
-<p><b>Identificación:</b> ${cliente.identificacion}</p>
-<p><b>Teléfono:</b> ${cliente.telefono || 'N/A'}</p>
-<p><b>Correo:</b> ${cliente.correo || 'N/A'}</p>
-<button onclick="editarCliente(${cliente.id_cliente})">Editar</button>
-<button onclick="eliminarCliente(${cliente.id_cliente})">Eliminar</button>
-`;
-contenedor.appendChild(div);
+// Encabezados dinámicos
+const headers = Object.keys(datos[0]);
+let html = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+
+// Filas
+datos.forEach(item => {
+html += "<tr>" + headers.map(h => `<td>${item[h]}</td>`).join("") + "</tr>";
 });
-})
-.catch(err => {
-console.error('❌ Error al obtener clientes:', err);
-contenedor.innerHTML = '<p style="color:red;">❌ Error al obtener clientes.</p>';
+
+tabla.innerHTML = html;
+}
+
+// ========================
+// Cargar CSV
+// ========================
+function parseCSV(content) {
+const lines = content.split("\n").filter(line => line.trim() !== "");
+const headers = lines[0].split(",");
+return lines.slice(1).map(line => {
+const values = line.split(",");
+let obj = {};
+headers.forEach((h, i) => obj[h.trim()] = values[i]?.trim() || "");
+return obj;
 });
 }
 
-// Manejo del formulario de clientes (Agregar o Editar)
-form.addEventListener('submit', e => {
-e.preventDefault();
-const id = inputId.value;
-const cliente = {
-nombre_cliente: inputNombre.value,
-identificacion: inputIdentificacion.value,
-direccion: inputDireccion.value,
-telefono: inputTelefono.value,
-correo: inputCorreo.value
+document.getElementById("btnCargarCSV").addEventListener("click", () => {
+const csvClientes = document.getElementById("csvClientes").files[0];
+const csvFacturas = document.getElementById("csvFacturas").files[0];
+const csvTransacciones = document.getElementById("csvTransacciones").files[0];
+
+if (csvClientes) {
+leerArchivoCSV(csvClientes, "clientes");
+}
+if (csvFacturas) {
+leerArchivoCSV(csvFacturas, "facturas");
+}
+if (csvTransacciones) {
+leerArchivoCSV(csvTransacciones, "transacciones");
+}
+});
+
+function leerArchivoCSV(file, key) {
+const reader = new FileReader();
+reader.onload = (e) => {
+const data = parseCSV(e.target.result);
+guardarEnLocalStorage(key, data);
+actualizarTablas();
 };
+reader.readAsText(file);
+}
 
-const url = id ? `/clientes/${id}` : '/clientes';
-const method = id ? 'PUT' : 'POST';
+// ========================
+// Formularios manuales
+// ========================
 
-fetch(url, {
-method,
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify(cliente)
-})
-.then(res => {
-if (!res.ok) throw new Error('❌ Error en la operación');
-return res.json();
-})
-.then(() => {
-limpiarFormulario();
-cargarClientes();
-})
-.catch(err => alert(err.message));
+// Clientes
+document.getElementById("formCliente").addEventListener("submit", (e) => {
+e.preventDefault();
+const clientes = leerDeLocalStorage("clientes");
+clientes.push({
+id_cliente: clientes.length + 1,
+nombre_cliente: document.getElementById("nombreCliente").value,
+identificacion: document.getElementById("identificacionCliente").value,
+direccion: document.getElementById("direccionCliente").value,
+telefono: document.getElementById("telefonoCliente").value,
+correo: document.getElementById("correoCliente").value
+});
+guardarEnLocalStorage("clientes", clientes);
+e.target.reset();
+actualizarTablas();
 });
 
-// Función para cancelar y limpiar el formulario
-btnCancelar.addEventListener('click', limpiarFormulario);
-
-function editarCliente(id) {
-fetch(`/clientes/${id}`)
-.then(res => res.json())
-.then(cliente => {
-inputId.value = cliente.id_cliente;
-inputNombre.value = cliente.nombre_cliente;
-inputIdentificacion.value = cliente.identificacion;
-inputDireccion.value = cliente.direccion || '';
-inputTelefono.value = cliente.telefono || '';
-inputCorreo.value = cliente.correo || '';
-btnCancelar.style.display = 'inline';
-})
-.catch(err => {
-console.error('❌ Error al obtener cliente:', err);
-alert('❌ Error al cargar el cliente.');
+// Facturas
+document.getElementById("formFactura").addEventListener("submit", (e) => {
+e.preventDefault();
+const facturas = leerDeLocalStorage("facturas");
+facturas.push({
+id_factura: facturas.length + 1,
+numero_factura: document.getElementById("numeroFactura").value,
+periodo_facturacion: document.getElementById("periodoFacturacion").value,
+monto_facturado: document.getElementById("montoFacturado").value,
+monto_pagado: document.getElementById("montoPagado").value,
+id_cliente: document.getElementById("idClienteFactura").value
 });
+guardarEnLocalStorage("facturas", facturas);
+e.target.reset();
+actualizarTablas();
+});
+
+// Transacciones
+document.getElementById("formTransaccion").addEventListener("submit", (e) => {
+e.preventDefault();
+const transacciones = leerDeLocalStorage("transacciones");
+transacciones.push({
+id_transaccion: transacciones.length + 1,
+codigo_transaccion: document.getElementById("codigoTransaccion").value,
+fecha_hora: document.getElementById("fechaHora").value,
+monto_transaccion: document.getElementById("montoTransaccion").value,
+estado: document.getElementById("estado").value,
+tipo_transaccion: document.getElementById("tipoTransaccion").value,
+plataforma: document.getElementById("plataforma").value,
+id_factura: document.getElementById("idFacturaTransaccion").value
+});
+guardarEnLocalStorage("transacciones", transacciones);
+e.target.reset();
+actualizarTablas();
+});
+
+// ========================
+// Actualizar todas las tablas
+// ========================
+function actualizarTablas() {
+mostrarTabla("tablaClientes", leerDeLocalStorage("clientes"));
+mostrarTabla("tablaFacturas", leerDeLocalStorage("facturas"));
+mostrarTabla("tablaTransacciones", leerDeLocalStorage("transacciones"));
 }
 
-function eliminarCliente(id) {
-if (confirm('¿Seguro que quieres eliminar este cliente?')) {
-fetch(`/clientes/${id}`, { method: 'DELETE' })
-.then(res => {
-if (!res.ok) throw new Error('❌ Error eliminando cliente');
-cargarClientes();
-})
-.catch(err => alert(err.message));
-}
-}
-
-function limpiarFormulario() {
-inputId.value = '';
-inputNombre.value = '';
-inputIdentificacion.value = '';
-inputDireccion.value = '';
-inputTelefono.value = '';
-inputCorreo.value = '';
-btnCancelar.style.display = 'none';
-}
-
-// Cargar clientes al inicio
-cargarClientes();
+// ========================
+// Cargar datos al iniciar
+// ========================
+document.addEventListener("DOMContentLoaded", actualizarTablas);

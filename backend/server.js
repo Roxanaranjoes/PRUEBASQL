@@ -1,16 +1,21 @@
-// server.js 
+// server.js
 
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
+const csv = require('csv-parser');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// ===============================
 // Verificar conexión con la base de datos
+// ===============================
 db.query('SELECT 1', (err) => {
 if (err) {
 console.error('❌ No se pudo conectar a la base de datos', err);
@@ -19,14 +24,14 @@ console.log('✅ Conexión a la base de datos exitosa');
 }
 });
 
+// ===============================
 // Servir archivos del frontend
+// ===============================
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 /* ============================
 CRUD CLIENTES
 ============================ */
-
-// Obtener todos los clientes
 app.get('/clientes', (req, res) => {
 db.query('SELECT * FROM clientes', (err, results) => {
 if (err) return res.status(500).json({ error: 'Error al obtener clientes' });
@@ -34,7 +39,6 @@ res.json(results);
 });
 });
 
-// Obtener cliente por ID
 app.get('/clientes/:id', (req, res) => {
 const { id } = req.params;
 db.query('SELECT * FROM clientes WHERE id_cliente = ?', [id], (err, results) => {
@@ -43,7 +47,6 @@ res.json(results[0]);
 });
 });
 
-// Crear nuevo cliente
 app.post('/clientes', (req, res) => {
 const { nombre_cliente, identificacion, direccion, telefono, correo } = req.body;
 db.query(
@@ -56,7 +59,6 @@ res.json({ id_cliente: result.insertId, ...req.body });
 );
 });
 
-// Actualizar cliente
 app.put('/clientes/:id', (req, res) => {
 const { id } = req.params;
 const { nombre_cliente, identificacion, direccion, telefono, correo } = req.body;
@@ -70,7 +72,6 @@ res.json({ id_cliente: id, ...req.body });
 );
 });
 
-// Eliminar cliente
 app.delete('/clientes/:id', (req, res) => {
 const { id } = req.params;
 db.query('DELETE FROM clientes WHERE id_cliente = ?', [id], (err) => {
@@ -82,8 +83,6 @@ res.status(204).send();
 /* ============================
 CRUD FACTURAS
 ============================ */
-
-// Obtener todas las facturas
 app.get('/facturas', (req, res) => {
 db.query(
 `SELECT f.*, c.nombre_cliente
@@ -96,7 +95,6 @@ res.json(results);
 );
 });
 
-// Obtener factura por ID
 app.get('/facturas/:id', (req, res) => {
 const { id } = req.params;
 db.query('SELECT * FROM facturas WHERE id_factura = ?', [id], (err, results) => {
@@ -105,7 +103,6 @@ res.json(results[0]);
 });
 });
 
-// Crear nueva factura
 app.post('/facturas', (req, res) => {
 const { numero_factura, periodo_facturacion, monto_facturado, monto_pagado, id_cliente } = req.body;
 db.query(
@@ -118,7 +115,6 @@ res.json({ id_factura: result.insertId, ...req.body });
 );
 });
 
-// Actualizar factura
 app.put('/facturas/:id', (req, res) => {
 const { id } = req.params;
 const { numero_factura, periodo_facturacion, monto_facturado, monto_pagado, id_cliente } = req.body;
@@ -132,7 +128,6 @@ res.json({ id_factura: id, ...req.body });
 );
 });
 
-// Eliminar factura
 app.delete('/facturas/:id', (req, res) => {
 const { id } = req.params;
 db.query('DELETE FROM facturas WHERE id_factura = ?', [id], (err) => {
@@ -140,6 +135,65 @@ if (err) return res.status(500).json({ error: 'Error eliminando factura' });
 res.status(204).send();
 });
 });
+
+/* ============================
+CRUD TRANSACCIONES
+============================ */
+// (Si no lo tienes implementado puedes añadirlo similar al CRUD de facturas)
+
+/* ============================
+CARGA DE CSV
+============================ */
+const upload = multer({ dest: 'uploads/' });
+
+// Cargar clientes.csv
+app.post('/upload-csv/clientes', upload.single('file'), (req, res) => {
+procesarCSV(req, res, 'clientes', ['nombre_cliente', 'identificacion', 'direccion', 'telefono', 'correo']);
+});
+
+// Cargar facturas.csv
+app.post('/upload-csv/facturas', upload.single('file'), (req, res) => {
+procesarCSV(req, res, 'facturas', ['numero_factura', 'periodo_facturacion', 'monto_facturado', 'monto_pagado', 'id_cliente']);
+});
+
+// Cargar transacciones.csv
+app.post('/upload-csv/transacciones', upload.single('file'), (req, res) => {
+procesarCSV(req, res, 'transacciones', ['codigo_transaccion', 'fecha_hora', 'monto_transaccion', 'estado', 'tipo_transaccion', 'plataforma', 'id_factura']);
+});
+
+// Función genérica para procesar CSV
+function procesarCSV(req, res, tabla, campos) {
+if (!req.file) {
+return res.status(400).json({ error: 'No se recibió ningún archivo' });
+}
+const filePath = req.file.path;
+const registros = [];
+
+fs.createReadStream(filePath)
+.pipe(csv())
+.on('data', (row) => {
+if (campos.every(c => row[c] !== undefined && row[c] !== '')) {
+registros.push(campos.map(c => row[c]));
+}
+})
+.on('end', () => {
+fs.unlinkSync(filePath);
+if (registros.length === 0) {
+return res.status(400).json({ error: `El archivo CSV no contiene registros válidos para la tabla ${tabla}.` });
+}
+const placeholders = campos.map(() => '?').join(', ');
+const insertQuery = `INSERT INTO ${tabla} (${campos.join(', ')}) VALUES (${placeholders})`;
+
+db.query(`INSERT INTO ${tabla} (${campos.join(', ')}) VALUES ?`, [registros], (err) => {
+if (err) return res.status(500).json({ error: `Error al importar CSV a ${tabla}` });
+res.json({ mensaje: `✅ CSV importado exitosamente en ${tabla}` });
+});
+})
+.on('error', (error) => {
+fs.unlinkSync(filePath);
+return res.status(500).json({ error: 'Error leyendo archivo CSV' });
+});
+}
 
 /* ============================
 FRONTEND
