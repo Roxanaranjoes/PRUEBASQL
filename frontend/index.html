@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Gestión de Clientes</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+form { margin-bottom: 20px; }
+.cliente { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+button { margin-right: 5px; }
+</style>
+</head>
+<body>
+<h1>Gestión de Clientes</h1>
+
+<form id="formCliente">
+<input type="hidden" id="clienteId">
+<div>
+<label>Nombre:</label>
+<input type="text" id="nombre_cliente" required>
+</div>
+<div>
+<label>Identificación:</label>
+<input type="text" id="identificacion" required>
+</div>
+<div>
+<label>Dirección:</label>
+<input type="text" id="direccion">
+</div>
+<div>
+<label>Teléfono:</label>
+<input type="text" id="telefono">
+</div>
+<div>
+<label>Correo:</label>
+<input type="email" id="correo">
+</div>
+<button type="submit">Guardar</button>
+<button type="button" id="btnCancelar" style="display:none;">Cancelar</button>
+</form>
+
+<h2>Lista de Clientes</h2>
+<div id="clientes"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
