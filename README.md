@@ -7,7 +7,7 @@ La base de datos se ejecuta en un contenedor **MySQL 8.0** usando Docker.
 
 ---
 
-## 🚀 Tecnologías utilizadas
+##  Tecnologías utilizadas
 
 - **Backend:** Node.js, Express, CORS, MySQL, Multer, CSV Parser
 - **Frontend:** HTML, CSS, JavaScript (puro o framework según implementación existente)
@@ -16,7 +16,7 @@ La base de datos se ejecuta en un contenedor **MySQL 8.0** usando Docker.
 
 ---
 
-## 📂 Estructura del proyecto
+##  Estructura del proyecto
 
 ```
 
@@ -44,9 +44,9 @@ PRUEBASQL/
 
 ---
 
-## ⚙️ Instalación y configuración
+##  Instalación y configuración
 
-### 1️⃣ Clonar el repositorio
+### 1 Clonar el repositorio
 
 ```bash
 
@@ -57,7 +57,7 @@ cd PRUEBASQL
 
 ---
 
-### 2️⃣ Iniciar base de datos en Docker
+### 2 Iniciar base de datos en Docker
 
 Ejecuta el contenedor de MySQL:
 
@@ -73,7 +73,7 @@ sudo docker run --name mysql-crud \
 
 ---
 
-### 3️⃣ Instalar dependencias del backend sino las tiene (si las tiene dejarlo tal cual)
+### 3 Instalar dependencias del backend sino las tiene (si las tiene dejarlo tal cual)
 
 ```bash
 
@@ -84,7 +84,7 @@ npm install express cors mysql multer csv-parser
 
 ---
 
-### 4️⃣ Configurar la base de datos
+### 4 Configurar la base de datos
 
 En el archivo **`db.js`** del backend, asegúrate de que la configuración coincida con el contenedor Docker:
 
@@ -111,7 +111,7 @@ module.exports = connection;
 
 ---
 
-### 5️⃣ Iniciar el servidor backend
+### 5 Iniciar el servidor backend
 
 ```bash
 
@@ -126,13 +126,13 @@ Por defecto se ejecutará en:
 
 ---
 
-### 6️⃣ Ejecutar el frontend
+### 6 Ejecutar el frontend
 
 Abre el archivo `index.html` del frontend en tu navegador o usa un servidor local como **Live Server** en VSCode.
 
 ---
 
-## 📤 Subida de CSV
+## Subida de CSV
 
 Para importar datos mediante CSV:
 
